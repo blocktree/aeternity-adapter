@@ -6,7 +6,7 @@ require (
 	github.com/aeternity/aepp-sdk-go v0.0.0-20190409183752-7852cf075e5e
 	github.com/asdine/storm v2.1.2+incompatible
 	github.com/astaxie/beego v1.11.1
-	github.com/blocktree/go-owcdrivers v1.0.2-0.20190412084624-07597e103094
+	github.com/blocktree/go-owcdrivers v1.0.3
 	github.com/blocktree/go-owcrypt v1.0.1
 	github.com/blocktree/openwallet v1.4.0
 	github.com/imroc/req v0.2.3

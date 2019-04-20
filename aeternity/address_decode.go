@@ -16,12 +16,7 @@
 package aeternity
 
 import (
-	"github.com/aeternity/aepp-sdk-go/aeternity"
 	"github.com/blocktree/go-owcdrivers/addressEncoder"
-)
-
-var (
-	AE_mainnetAddress = addressEncoder.AddressType{"base58", addressEncoder.BTCAlphabet, "doubleSHA256", "", 32, nil, nil}
 )
 
 type AddressDecoder struct {
@@ -43,8 +38,7 @@ func (decoder *AddressDecoder) PrivateKeyToWIF(priv []byte, isTestnet bool) (str
 
 //PublicKeyToAddress 公钥转地址
 func (decoder *AddressDecoder) PublicKeyToAddress(pub []byte, isTestnet bool) (string, error) {
-	address := addressEncoder.AddressEncode(pub, AE_mainnetAddress)
-	address = string(aeternity.PrefixAccountPubkey) + address
+	address := addressEncoder.AddressEncode(pub, addressEncoder.AE_mainnetAddress)
 	return address, nil
 }
 
