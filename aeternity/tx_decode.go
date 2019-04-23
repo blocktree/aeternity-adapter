@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/aeternity/aepp-sdk-go/aeternity"
 	"github.com/aeternity/aepp-sdk-go/utils"
+	"github.com/blocktree/aeternity-adapter/aeternity_txsigner"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/log"
@@ -86,6 +87,8 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	//计算手续费
 	feeInfo = &txFeeInfo{
 		Fee: fixFees,
+		GasPrice: fixFees,
+		GasUsed: big.NewInt(1),
 	}
 
 	for _, addrBalance := range addrBalanceArray {
@@ -156,8 +159,10 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 			}
 
 			//msg := append([]byte(decoder.wm.Config.NetworkID), hash...)
-			sig, ret := owcrypt.Signature(keyBytes, nil, 0, msg, uint16(len(msg)), keySignature.EccType)
-			if ret != owcrypt.SUCCESS {
+			//sig, ret := owcrypt.Signature(keyBytes, nil, 0, msg, uint16(len(msg)), keySignature.EccType)
+			sig, err := aeternity_txsigner.Default.SignTransactionHash(msg, keyBytes, keySignature.EccType)
+			//if ret != owcrypt.SUCCESS {
+			if err != nil {
 				return fmt.Errorf("sign transaction hash failed, unexpected err: %v", err)
 			}
 
@@ -307,8 +312,11 @@ func (decoder *TransactionDecoder) CreateSummaryRawTransaction(wrapper openwalle
 	}
 
 	//计算手续费
+	//计算手续费
 	feeInfo = &txFeeInfo{
 		Fee: fixFees,
+		GasPrice: fixFees,
+		GasUsed: big.NewInt(1),
 	}
 
 	for _, addrBalance := range addrBalanceArray {
@@ -457,14 +465,15 @@ func (decoder *TransactionDecoder) createRawTransaction(
 	}
 	keySignList = append(keySignList, &signature)
 
-	feesDec, _ := decimal.NewFromString(rawTx.Fees)
-	accountTotalSent = accountTotalSent.Add(feesDec)
+	feesAmount := common.BigIntToDecimals(feeInfo.Fee, decimals)
+	gasPrice := common.BigIntToDecimals(feeInfo.GasPrice, decimals)
+	accountTotalSent = accountTotalSent.Add(feesAmount)
 	accountTotalSent = decimal.Zero.Sub(accountTotalSent)
 
 	//rawTx.RawHex = rawHex
 	rawTx.Signatures[rawTx.Account.AccountID] = keySignList
-	rawTx.FeeRate = feeInfo.GasPrice.String()
-	rawTx.Fees = feeInfo.Fee.String()
+	rawTx.FeeRate = gasPrice.String()
+	rawTx.Fees = feesAmount.String()
 	rawTx.IsBuilt = true
 	rawTx.TxAmount = accountTotalSent.StringFixed(decimals)
 	rawTx.TxFrom = txFrom

@@ -121,14 +121,14 @@ func TestTransfer_AE(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WKnpZFZbcDtn6xM6FAh6aVSiU342H8Pbcp"
 	accountID := "3kjTyuy8dt2RUcokpbg27ioBHBehh8THKz9FxsrrDZS6"
-	to := "ak_mPXUBSsSCJgfu3yz2i2AiVTtLA2TzMyMJL5e6X7shM9Qa246t"
+	to := "ak_2tsFtu1FKgw17Euf4gJuhVyGBxva6jYbcpawBHSELdUYcfxVMo"
 
 	//accountID := "3biDqABdY66PtH5R8xk2upxz5xcLLpu7pDvpq3Bb9Yec"
 	//to := "ak_qcqXt6ySgRPvBkNwEpNMvaKWzrhPZsoBHLvgg68qg9vRht62y"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.016", "", nil)
+	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.001", "", nil)
 	if err != nil {
 		return
 	}
