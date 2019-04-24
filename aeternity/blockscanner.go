@@ -378,7 +378,7 @@ func (bs *AEBlockScanner) ScanBlockTask() {
 
 	//重扫前N个块，为保证记录找到
 	for i := currentHeight - bs.RescanLastBlockCount; i < currentHeight; i++ {
-		bs.ScanBlock(i+1)
+		bs.ScanBlock(i + 1)
 	}
 
 	//重扫失败区块
@@ -682,8 +682,8 @@ func (bs *AEBlockScanner) ExtractTransaction(block *Block, microBlockID string, 
 			input.Sid = openwallet.GenTxInputSID(txID, bs.wm.Symbol(), "", uint64(0))
 			//input.CreateAt = createAt
 			input.BlockHeight = *trx.BlockHeight
-			input.BlockHash = string(trx.BlockHash)
-
+			//input.BlockHash = string(trx.BlockHash)
+			input.BlockHash = block.Hash //TODO: 先记录keyblock的hash方便上层计算确认次数，以后做扩展
 			ed := result.extractData[sourceKey]
 			if ed == nil {
 				ed = openwallet.NewBlockExtractData()
@@ -717,7 +717,8 @@ func (bs *AEBlockScanner) ExtractTransaction(block *Block, microBlockID string, 
 			output.Sid = openwallet.GenTxOutPutSID(txID, bs.wm.Symbol(), "", 0)
 			output.CreateAt = createAt
 			output.BlockHeight = *trx.BlockHeight
-			output.BlockHash = string(trx.BlockHash)
+			//output.BlockHash = string(trx.BlockHash)
+			output.BlockHash = block.Hash //TODO: 先记录keyblock的hash方便上层计算确认次数，以后做扩展
 			ed := result.extractData[sourceKey2]
 			if ed == nil {
 				ed = openwallet.NewBlockExtractData()
@@ -739,7 +740,8 @@ func (bs *AEBlockScanner) ExtractTransaction(block *Block, microBlockID string, 
 					Symbol:     bs.wm.Symbol(),
 					IsContract: false,
 				},
-				BlockHash:   string(trx.BlockHash),
+				//BlockHash:   string(trx.BlockHash),
+				BlockHash:   block.Hash, //TODO: 先记录keyblock的hash方便上层计算确认次数，以后做扩展
 				BlockHeight: *trx.BlockHeight,
 				TxID:        txID,
 				Decimal:     decimals,
