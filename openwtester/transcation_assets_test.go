@@ -63,10 +63,10 @@ func testCreateSummaryTransactionStep(
 	tm *openw.WalletManager,
 	walletID, accountID, summaryAddress, minTransfer, retainedBalance, feeRate string,
 	start, limit int,
-	contract *openwallet.SmartContract) ([]*openwallet.RawTransaction, error) {
+	contract *openwallet.SmartContract) ([]*openwallet.RawTransactionWithError, error) {
 
-	rawTxArray, err := tm.CreateSummaryTransaction(testApp, walletID, accountID, summaryAddress, minTransfer,
-		retainedBalance, feeRate, start, limit, contract)
+	rawTxArray, err := tm.CreateSummaryRawTransactionWithError(testApp, walletID, accountID, summaryAddress, minTransfer,
+		retainedBalance, feeRate, start, limit, contract, nil)
 
 	if err != nil {
 		log.Error("CreateSummaryTransaction failed, unexpected error:", err)
@@ -155,7 +155,7 @@ func TestTransfer_AE(t *testing.T) {
 func TestSummary_AE(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WKnpZFZbcDtn6xM6FAh6aVSiU342H8Pbcp"
-	accountID := "3biDqABdY66PtH5R8xk2upxz5xcLLpu7pDvpq3Bb9Yec"
+	accountID := "3kjTyuy8dt2RUcokpbg27ioBHBehh8THKz9FxsrrDZS6"
 	summaryAddress := "ak_qcqXt6ySgRPvBkNwEpNMvaKWzrhPZsoBHLvgg68qg9vRht62y"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
@@ -169,18 +169,24 @@ func TestSummary_AE(t *testing.T) {
 	}
 
 	//执行汇总交易
-	for _, rawTx := range rawTxArray {
-		_, err = testSignTransactionStep(tm, rawTx)
+	for _, rawTxWithErr := range rawTxArray {
+
+		if rawTxWithErr.Error != nil {
+			log.Error(rawTxWithErr.Error.Error())
+			continue
+		}
+
+		_, err = testSignTransactionStep(tm, rawTxWithErr.RawTx)
 		if err != nil {
 			return
 		}
 
-		_, err = testVerifyTransactionStep(tm, rawTx)
+		_, err = testVerifyTransactionStep(tm, rawTxWithErr.RawTx)
 		if err != nil {
 			return
 		}
 
-		_, err = testSubmitTransactionStep(tm, rawTx)
+		_, err = testSubmitTransactionStep(tm, rawTxWithErr.RawTx)
 		if err != nil {
 			return
 		}
