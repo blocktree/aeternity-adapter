@@ -378,7 +378,7 @@ func (bs *AEBlockScanner) ScanBlockTask() {
 
 	//重扫前N个块，为保证记录找到
 	for i := currentHeight - bs.RescanLastBlockCount; i < currentHeight; i++ {
-		bs.ScanBlock(i + 1)
+		bs.scanBlock(i + 1)
 	}
 
 	//重扫失败区块
@@ -389,6 +389,19 @@ func (bs *AEBlockScanner) ScanBlockTask() {
 //ScanBlock 扫描指定高度区块
 func (bs *AEBlockScanner) ScanBlock(height uint64) error {
 
+	block, err := bs.scanBlock(height)
+	if err != nil {
+		return err
+	}
+
+	//通知新区块给观测者，异步处理
+	bs.newBlockNotify(block, false)
+
+	return nil
+}
+
+func (bs *AEBlockScanner) scanBlock(height uint64) (*Block, error) {
+
 	block, err := bs.GetBlockByHeight(height)
 	if err != nil {
 		bs.wm.Log.Std.Info("block scanner can not get new block data; unexpected error: %v", err)
@@ -396,27 +409,20 @@ func (bs *AEBlockScanner) ScanBlock(height uint64) error {
 		//unscanRecord := NewUnscanRecord(height, "", err.Error())
 		//bs.SaveUnscanRecord(unscanRecord)
 		bs.wm.Log.Std.Info("block height: %d extract failed.", height)
-		return err
+		return nil, err
 	}
-
-	bs.scanBlock(block)
-
-	return nil
-}
-
-func (bs *AEBlockScanner) scanBlock(block *Block) error {
 
 	bs.wm.Log.Std.Info("block scanner rescanning height: %d ...", block.Height)
 
-	err := bs.BatchExtractTransaction(block)
+	err = bs.BatchExtractTransaction(block)
 	if err != nil {
 		bs.wm.Log.Std.Info("block scanner can not extractRechargeRecords; unexpected error: %v", err)
-		return err
+		return nil, err
 	}
 	//通知新区块给观测者，异步处理
 	//bs.newBlockNotify(block, false)
 
-	return nil
+	return block, nil
 }
 
 //rescanFailedRecord 重扫失败记录
