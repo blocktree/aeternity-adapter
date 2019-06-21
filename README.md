@@ -14,5 +14,7 @@ serverAPI = "http://127.0.0.1:10007"
 networkID = "ae_mainnet"
 # fix fees for transaction
 fixFees = "0.00002"
+# Cache data file directory, default = "", current directory: ./data
+dataDir = ""
 
 ```

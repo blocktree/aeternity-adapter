@@ -59,6 +59,10 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	aeCli := aeternity.NewCli(aeternity.Config.Node.URL, false)
 	wm.Api = aeCli
 	wm.client = NewClient(wm.Config.ServerAPI, false)
+	wm.Config.DataDir = c.String("dataDir")
+
+	//数据文件夹
+	wm.Config.makeDataDir()
 	return nil
 }
 
