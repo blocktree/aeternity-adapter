@@ -46,7 +46,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	}
 
 	if len(addresses) == 0 {
-		return fmt.Errorf("[%s] have not addresses", accountID)
+		return openwallet.Errorf(openwallet.ErrAccountNotAddress,"[%s] have not addresses", accountID)
 	}
 
 	searchAddrs := make([]string, 0)
@@ -110,7 +110,7 @@ func (decoder *TransactionDecoder) CreateRawTransaction(wrapper openwallet.Walle
 	}
 
 	if findAddrBalance == nil {
-		return fmt.Errorf("all address's balance of account is not enough")
+		return openwallet.Errorf(openwallet.ErrInsufficientBalanceOfAccount,"all address's balance of account is not enough")
 	}
 
 	//最后创建交易单
