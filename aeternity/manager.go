@@ -4,18 +4,17 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/aeternity/aepp-sdk-go/aeternity"
-	apiclient "github.com/aeternity/aepp-sdk-go/generated/client"
-	"github.com/aeternity/aepp-sdk-go/generated/client/external"
-	"github.com/aeternity/aepp-sdk-go/generated/models"
-	"github.com/aeternity/aepp-sdk-go/rlp"
+	"github.com/aeternity/aepp-sdk-go/swagguard/node/client/external"
+	"github.com/aeternity/aepp-sdk-go/swagguard/node/models"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
+	rlp "github.com/randomshinichi/rlpae"
 )
 
 type WalletManager struct {
 	openwallet.AssetsAdapterBase
 
-	Api             *aeternity.Ae                   // 节点客户端
+	Api             *aeternity.Node                 // 节点客户端
 	Config          *WalletConfig                   // 节点配置
 	Decoder         openwallet.AddressDecoder       //地址编码器
 	TxDecoder       openwallet.TransactionDecoder   //交易单编码器
@@ -42,34 +41,38 @@ func (wm *WalletManager) GetAccount(address string) (*models.Account, error) {
 	if wm.Api == nil {
 		return nil, fmt.Errorf("aeternity API is not inited")
 	}
-	return wm.Api.APIGetAccount(address)
+	return wm.Api.GetAccount(address)
 }
 
 //GetAccountPendingTxCount
 func (wm *WalletManager) GetAccountPendingTxCount(address string) (uint64, error) {
 
-	if wm.client == nil {
-		return 0, fmt.Errorf("aeternity API is not inited")
-	}
 	//GetPendingAccountTransactionsByPubkey有bug
-	//p := external.NewGetPendingAccountTransactionsByPubkeyParams().WithPubkey(address)
-	//result, err := wm.Api.Node.External.GetPendingAccountTransactionsByPubkey(p)
-	//if err != nil {
-	//	return 0, err
-	//}
-
-	path := fmt.Sprintf("/accounts/%s/transactions/pending", address)
-	result, err := wm.client.Call(path, "GET", nil)
+	p := external.NewGetPendingAccountTransactionsByPubkeyParams().WithPubkey(address)
+	result, err := wm.Api.External.GetPendingAccountTransactionsByPubkey(p)
 	if err != nil {
 		return 0, err
 	}
 
-	txs := result.Get("transactions")
-	if !txs.IsArray() {
-		return 0, nil
-	}
+	count := len(result.Payload.Transactions)
+	return uint64(count), nil
 
-	return uint64(len(txs.Array())), nil
+	//if wm.client == nil {
+	//	return 0, fmt.Errorf("aeternity API is not inited")
+	//}
+	//
+	//path := fmt.Sprintf("/accounts/%s/transactions/pending", address)
+	//result, err := wm.client.Call(path, "GET", nil)
+	//if err != nil {
+	//	return 0, err
+	//}
+
+	//txs := result.Get("transactions")
+	//if !txs.IsArray() {
+	//	return 0, nil
+	//}
+	//
+	//return uint64(len(txs.Array())), nil
 }
 
 // BroadcastTransaction recalculates the transaction hash and sends the transaction to the node.
@@ -79,13 +82,14 @@ func (wm *WalletManager) BroadcastTransaction(txHex string) (string, error) {
 		return "", fmt.Errorf("transaction decode failed, unexpected error: %v", err)
 	}
 	signedEncodedTx := aeternity.Encode(aeternity.PrefixTransaction, txBytes)
+	wm.Log.Debugf("signedEncodedTx: %s", signedEncodedTx)
 	// calculate the hash of the decoded txRLP
 	//rlpTxHashRaw := owcrypt.Hash(txBytes, 32, owcrypt.HASH_ALG_BLAKE2B)
 	//// base58/64 encode the hash with the th_ prefix
 	//signedEncodedTxHash := aeternity.Encode(aeternity.PrefixTransactionHash, rlpTxHashRaw)
 
 	// send it to the network
-	return postTransaction(wm.Api.Node, signedEncodedTx)
+	return postTransaction(wm.Api, signedEncodedTx)
 }
 
 // SignEncodeTx sign and encode a transaction
@@ -123,7 +127,7 @@ func buildRLPMessage(tag uint, version uint, fields ...interface{}) (rlpRawMsg [
 }
 
 // postTransaction post a transaction to the chain
-func postTransaction(node *apiclient.Node, signedEncodedTx string) (string, error) {
+func postTransaction(node *aeternity.Node, signedEncodedTx string) (string, error) {
 	p := external.NewPostTransactionParams().WithBody(&models.Tx{
 		Tx: &signedEncodedTx,
 	})
@@ -134,5 +138,5 @@ func postTransaction(node *apiclient.Node, signedEncodedTx string) (string, erro
 	//if r.Payload.TxHash != models.EncodedHash(signedEncodedTxHash) {
 	//	err = fmt.Errorf("Transaction hash mismatch, expected %s got %s", signedEncodedTxHash, r.Payload.TxHash)
 	//}
-	return string(r.Payload.TxHash), nil
+	return string(*r.Payload.TxHash), nil
 }

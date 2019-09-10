@@ -19,7 +19,7 @@ func TestAEBlockScanner_GetCurrentBlockHeader(t *testing.T) {
 
 func TestGetBlockHeight(t *testing.T) {
 	wm := testNewWalletManager()
-	height, err := wm.Api.APIGetHeight()
+	height, err := wm.Api.GetHeight()
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 		return
@@ -39,7 +39,7 @@ func TestAEBlockScanner_GetBlockByHeight(t *testing.T) {
 
 func TestAEBlockScanner_GetTransactionsByMicroBlockHash(t *testing.T) {
 	wm := testNewWalletManager()
-	txs, err := wm.Blockscanner.GetTransactionsByMicroBlockHash("mh_MxzxMdhrUAFm7cDU3JoxaB1i6wvNepZ15S3uQWgBqbbN4ZJhV")
+	txs, err := wm.Blockscanner.GetTransactionsByMicroBlockHash("mh_o18KTf4s7nMpxDq8kKsD6H3KzQ8zzPJnsMdYtk6hKYtCquEbD")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 		return

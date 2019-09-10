@@ -56,8 +56,9 @@ func (wm *WalletManager) LoadAssetsConfig(c config.Configer) error {
 	wm.Config.NetworkID = c.String("networkID")
 	aeternity.Config.Node.URL = wm.Config.ServerAPI
 	aeternity.Config.Node.NetworkID = wm.Config.NetworkID
-	aeCli := aeternity.NewCli(aeternity.Config.Node.URL, false)
-	wm.Api = aeCli
+
+	client := aeternity.NewNode(aeternity.Config.Node.URL, false)
+	wm.Api = client
 	wm.client = NewClient(wm.Config.ServerAPI, false)
 	wm.Config.DataDir = c.String("dataDir")
 

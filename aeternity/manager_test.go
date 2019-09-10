@@ -1,6 +1,8 @@
 package aeternity
 
 import (
+	"encoding/hex"
+	"github.com/aeternity/aepp-sdk-go/aeternity"
 	"github.com/astaxie/beego/config"
 	"github.com/blocktree/openwallet/log"
 	"path/filepath"
@@ -43,4 +45,23 @@ func TestWalletManager_GetAccountPendingTxCount(t *testing.T) {
 		return
 	}
 	log.Infof("%+v", r)
+}
+
+func TestWalletManager_BroadcastTransaction(t *testing.T) {
+	wm := testNewWalletManager()
+	txHex, _ := hex.DecodeString("f85b0c01a1016eeba7851c2ddb4dd4d47588f1e1a204f88d6e0eed3026caf3b8ec3e432f9d89a1016e6490ba9ffa3ed276048e23c52f09a7622e02111124e9c770d1a6ac11a723c6872386f26fc100008612309ce540008301dfcb0180")
+	signature, _ := hex.DecodeString("6d3987133430a65b834052e3ca22282ca5b7741ca46d8a5c295338a8b890e340c42aaffa1f887d2016b25e2bb0b652c310a02f03c3f3c11abe9e87cc9a0e9f08")
+	txBytes, err := createSignedTransaction(txHex, [][]byte{signature})
+	if err != nil {
+		t.Errorf("createSignedTransaction failed, unexpected error: %v", err)
+		return
+	}
+	signedEncodedTx := aeternity.Encode(aeternity.PrefixTransaction, txBytes)
+	log.Infof("signedEncodedTx: %s", signedEncodedTx)
+	txid, err := wm.BroadcastTransaction(hex.EncodeToString(txBytes))
+	if err != nil {
+		t.Errorf("BroadcastTransaction failed, unexpected error: %v", err)
+		return
+	}
+	log.Infof("txid: %s", txid)
 }

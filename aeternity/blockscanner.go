@@ -2,10 +2,10 @@ package aeternity
 
 import (
 	"fmt"
-	"github.com/aeternity/aepp-sdk-go/generated/client/external"
-	"github.com/aeternity/aepp-sdk-go/generated/models"
+	"github.com/aeternity/aepp-sdk-go/swagguard/node/models"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/openwallet"
+	"math/big"
 	"time"
 )
 
@@ -74,8 +74,8 @@ func (bs *AEBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet.
 	for _, a := range address {
 		acc, err := bs.wm.GetAccount(a)
 		if err == nil {
-
-			b := common.BigIntToDecimals(acc.Balance.Int, bs.wm.Decimal())
+			balance := big.Int(acc.Balance)
+			b := common.BigIntToDecimals(&balance, bs.wm.Decimal())
 			obj := &openwallet.Balance{
 				Symbol:           bs.wm.Symbol(),
 				Address:          a,
@@ -96,7 +96,7 @@ func (bs *AEBlockScanner) GetBalanceByAddress(address ...string) ([]*openwallet.
 //GetCurrentBlock 获取当前最新区块
 func (bs *AEBlockScanner) GetCurrentBlock() (*Block, error) {
 
-	generation, err := bs.wm.Api.Node.External.GetCurrentGeneration(nil)
+	generation, err := bs.wm.Api.External.GetCurrentGeneration(nil)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +109,7 @@ func (bs *AEBlockScanner) GetCurrentBlock() (*Block, error) {
 //GetBlockHeight 获取区块链高度
 func (bs *AEBlockScanner) GetBlockHeight() (uint64, error) {
 
-	height, err := bs.wm.Api.Node.External.GetCurrentKeyBlockHeight(nil)
+	height, err := bs.wm.Api.External.GetCurrentKeyBlockHeight(nil)
 	if err != nil {
 		return 0, err
 	}
@@ -124,12 +124,12 @@ func (bs *AEBlockScanner) GetCurrentBlockHeader() (*openwallet.BlockHeader, erro
 		err      error
 	)
 
-	keyBlock, err = bs.wm.Api.APIGetCurrentKeyBlock()
+	keyBlock, err = bs.wm.Api.GetCurrentKeyBlock()
 	if err != nil {
 		return nil, err
 	}
 
-	return &openwallet.BlockHeader{Height: *keyBlock.Height, Hash: string(keyBlock.Hash)}, nil
+	return &openwallet.BlockHeader{Height: *keyBlock.Height, Hash: *keyBlock.Hash}, nil
 }
 
 //GetTopBlock 获取顶部区块，可能是micro block 或 key block
@@ -140,7 +140,7 @@ func (bs *AEBlockScanner) GetTopBlock() (*models.KeyBlockOrMicroBlockHeader, err
 		err error
 	)
 
-	kb, err = bs.wm.Api.APIGetTopBlock()
+	kb, err = bs.wm.Api.GetTopBlock()
 	if err != nil {
 		return nil, err
 	}
@@ -165,13 +165,12 @@ func (bs *AEBlockScanner) SetRescanBlockHeight(height uint64) error {
 }
 
 func (bs *AEBlockScanner) GetBlockByHeight(height uint64) (*Block, error) {
-	p := external.NewGetGenerationByHeightParams().WithHeight(height)
-	keyBlock, err := bs.wm.Api.Node.External.GetGenerationByHeight(p)
+	keyBlock, err := bs.wm.Api.GetGenerationByHeight(height)
 	if err != nil {
 		return nil, err
 	}
 
-	block := NewBlock(keyBlock.Payload)
+	block := NewBlock(keyBlock)
 
 	return block, nil
 }
@@ -218,7 +217,7 @@ func (bs *AEBlockScanner) GetScannedBlockHeight() uint64 {
 //GetGlobalMaxBlockHeight 获取区块链全网最大高度
 func (bs *AEBlockScanner) GetGlobalMaxBlockHeight() uint64 {
 
-	generation, err := bs.wm.Api.Node.External.GetCurrentGeneration(nil)
+	generation, err := bs.wm.Api.External.GetCurrentGeneration(nil)
 	if err != nil {
 		return 0
 	}
@@ -228,7 +227,7 @@ func (bs *AEBlockScanner) GetGlobalMaxBlockHeight() uint64 {
 
 //GetTransactionsByMicroBlockHash
 func (bs *AEBlockScanner) GetTransactionsByMicroBlockHash(hash string) ([]*models.GenericSignedTx, error) {
-	txs, err := bs.wm.Api.APIGetMicroBlockTransactionsByHash(hash)
+	txs, err := bs.wm.Api.GetMicroBlockTransactionsByHash(hash)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +239,7 @@ func (bs *AEBlockScanner) GetTransactionsByBlock(block *Block) ([]*models.Generi
 
 	transactions := make([]*models.GenericSignedTx, 0)
 	for _, mb := range block.MicroBlocks {
-		txs, err := bs.wm.Api.APIGetMicroBlockTransactionsByHash(string(mb))
+		txs, err := bs.wm.Api.GetMicroBlockTransactionsByHash(string(mb))
 		if err != nil {
 			return nil, err
 		}
@@ -545,7 +544,7 @@ func (bs *AEBlockScanner) BatchExtractTransaction(block *Block) error {
 		for _, mid := range eBlock.MicroBlocks {
 			bs.extractingCH <- struct{}{}
 			//shouldDone++
-			go func(mBlock *Block, mMid models.EncodedHash, end chan struct{}, mProducer chan<- ExtractResult) {
+			go func(mBlock *Block, mMid string, end chan struct{}, mProducer chan<- ExtractResult) {
 
 				//导出提出的交易
 				mProducer <- bs.ExtractMicroBlock(mBlock, mMid, bs.ScanTargetFunc)
@@ -611,7 +610,7 @@ func (bs *AEBlockScanner) extractRuntime(producer chan ExtractResult, worker cha
 }
 
 //ExtractMicroBlock
-func (bs *AEBlockScanner) ExtractMicroBlock(block *Block, microBlockID models.EncodedHash, scanTargetFunc openwallet.BlockScanTargetFunc) ExtractResult {
+func (bs *AEBlockScanner) ExtractMicroBlock(block *Block, microBlockID string, scanTargetFunc openwallet.BlockScanTargetFunc) ExtractResult {
 
 	var (
 		result = ExtractResult{
@@ -648,7 +647,7 @@ func (bs *AEBlockScanner) ExtractMicroBlock(block *Block, microBlockID models.En
 func (bs *AEBlockScanner) ExtractTransaction(block *Block, microBlockID string, trx *models.GenericSignedTx, scanTargetFunc openwallet.BlockScanTargetFunc) (*ExtractTxResult, error) {
 
 	var (
-		txID   = string(trx.Hash)
+		txID   = *trx.Hash
 		result = &ExtractTxResult{
 			TxID:        txID,
 			extractData: make(map[string]*openwallet.TxExtractData),
@@ -664,11 +663,13 @@ func (bs *AEBlockScanner) ExtractTransaction(block *Block, microBlockID string, 
 		if !ok {
 			return nil, fmt.Errorf("the tx can not convert models.SpendTxJSON")
 		}
-
-		amount := common.BigIntToDecimals(spendTxJSON.Amount.Int, decimals).String()
-		fees := common.BigIntToDecimals(spendTxJSON.Fee.Int, decimals).String()
-		from := string(spendTxJSON.SenderID)
-		to := string(spendTxJSON.RecipientID)
+		bigHeight := big.Int(trx.BlockHeight)
+		bigAmount := big.Int(spendTxJSON.Amount)
+		bigFee := big.Int(spendTxJSON.Fee)
+		amount := common.BigIntToDecimals(&bigAmount, decimals).String()
+		fees := common.BigIntToDecimals(&bigFee, decimals).String()
+		from := *spendTxJSON.SenderID
+		to := *spendTxJSON.RecipientID
 
 		sourceKey, ok := scanTargetFunc(
 			openwallet.ScanTarget{
@@ -678,7 +679,7 @@ func (bs *AEBlockScanner) ExtractTransaction(block *Block, microBlockID string, 
 		if ok {
 			input := openwallet.TxInput{}
 			input.TxID = txID
-			input.Address = string(spendTxJSON.SenderID)
+			input.Address = *spendTxJSON.SenderID
 			input.Amount = amount
 			input.Coin = openwallet.Coin{
 				Symbol:     bs.wm.Symbol(),
@@ -687,7 +688,7 @@ func (bs *AEBlockScanner) ExtractTransaction(block *Block, microBlockID string, 
 			input.Index = 0
 			input.Sid = openwallet.GenTxInputSID(txID, bs.wm.Symbol(), "", uint64(0))
 			//input.CreateAt = createAt
-			input.BlockHeight = *trx.BlockHeight
+			input.BlockHeight = bigHeight.Uint64()
 			//input.BlockHash = string(trx.BlockHash)
 			input.BlockHash = block.Hash //TODO: 先记录keyblock的hash方便上层计算确认次数，以后做扩展
 			ed := result.extractData[sourceKey]
@@ -707,7 +708,7 @@ func (bs *AEBlockScanner) ExtractTransaction(block *Block, microBlockID string, 
 
 		sourceKey2, ok2 := scanTargetFunc(
 			openwallet.ScanTarget{
-				Address:          string(spendTxJSON.RecipientID),
+				Address:          *spendTxJSON.RecipientID,
 				BalanceModelType: openwallet.BalanceModelTypeAddress,
 			})
 		if ok2 {
@@ -722,7 +723,8 @@ func (bs *AEBlockScanner) ExtractTransaction(block *Block, microBlockID string, 
 			output.Index = 0
 			output.Sid = openwallet.GenTxOutPutSID(txID, bs.wm.Symbol(), "", 0)
 			output.CreateAt = createAt
-			output.BlockHeight = *trx.BlockHeight
+
+			output.BlockHeight = bigHeight.Uint64()
 			//output.BlockHash = string(trx.BlockHash)
 			output.BlockHash = block.Hash //TODO: 先记录keyblock的hash方便上层计算确认次数，以后做扩展
 			ed := result.extractData[sourceKey2]
@@ -748,7 +750,7 @@ func (bs *AEBlockScanner) ExtractTransaction(block *Block, microBlockID string, 
 				},
 				//BlockHash:   string(trx.BlockHash),
 				BlockHash:   block.Hash, //TODO: 先记录keyblock的hash方便上层计算确认次数，以后做扩展
-				BlockHeight: *trx.BlockHeight,
+				BlockHeight: bigHeight.Uint64(),
 				TxID:        txID,
 				Decimal:     decimals,
 				Status:      status,
@@ -794,15 +796,16 @@ func (bs *AEBlockScanner) newExtractDataNotify(height uint64, extractTxResult []
 
 //ExtractTransactionData
 func (bs *AEBlockScanner) ExtractTransactionData(txid string, scanAddressFunc openwallet.BlockScanTargetFunc) (map[string][]*openwallet.TxExtractData, error) {
-	tx, err := bs.wm.Api.APIGetTransactionByHash(txid)
+	tx, err := bs.wm.Api.GetTransactionByHash(txid)
 	if err != nil {
 		return nil, err
 	}
-	block, err := bs.GetBlockByHeight(*tx.BlockHeight)
+	bigHeight := big.Int(tx.BlockHeight)
+	block, err := bs.GetBlockByHeight(bigHeight.Uint64())
 	if err != nil {
 		return nil, err
 	}
-	result, err := bs.ExtractTransaction(block, string(tx.BlockHash), tx, scanAddressFunc)
+	result, err := bs.ExtractTransaction(block, *tx.BlockHash, tx, scanAddressFunc)
 	if err != nil {
 		return nil, err
 	}

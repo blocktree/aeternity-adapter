@@ -2,7 +2,7 @@ package aeternity
 
 import (
 	"fmt"
-	"github.com/aeternity/aepp-sdk-go/generated/models"
+	"github.com/aeternity/aepp-sdk-go/swagguard/node/models"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/crypto"
 	"github.com/blocktree/openwallet/openwallet"
@@ -32,7 +32,7 @@ type Block struct {
 	Hash              string
 	Confirmations     uint64
 	Merkleroot        string
-	MicroBlocks       []models.EncodedHash
+	MicroBlocks       []string
 	Previousblockhash string
 	Height            uint64 `storm:"id"`
 	Version           uint64
@@ -43,9 +43,9 @@ type Block struct {
 func NewBlock(generation *models.Generation) *Block {
 	obj := &Block{}
 	obj.Height = *generation.KeyBlock.Height
-	obj.Hash = string(generation.KeyBlock.Hash)
-	obj.Previousblockhash = string(generation.KeyBlock.PrevKeyHash)
-	obj.Time = uint64(*generation.KeyBlock.Time)
+	obj.Hash = *generation.KeyBlock.Hash
+	obj.Previousblockhash = *generation.KeyBlock.PrevKeyHash
+	obj.Time = *generation.KeyBlock.Time
 	obj.MicroBlocks = generation.MicroBlocks
 
 	return obj

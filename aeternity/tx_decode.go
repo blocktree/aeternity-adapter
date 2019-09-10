@@ -4,12 +4,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/aeternity/aepp-sdk-go/aeternity"
-	"github.com/aeternity/aepp-sdk-go/utils"
 	"github.com/blocktree/aeternity-adapter/aeternity_txsigner"
 	"github.com/blocktree/go-owcrypt"
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
+	rlp "github.com/randomshinichi/rlpae"
 	"github.com/shopspring/decimal"
 	"math/big"
 	"sort"
@@ -166,7 +166,7 @@ func (decoder *TransactionDecoder) SignRawTransaction(wrapper openwallet.WalletD
 				return fmt.Errorf("sign transaction hash failed, unexpected err: %v", err)
 			}
 
-			//decoder.wm.Log.Debugf("message: %s", hex.EncodeToString(msg))
+			decoder.wm.Log.Debugf("message: %s", hex.EncodeToString(msg))
 			//decoder.wm.Log.Debugf("publicKey: %s", hex.EncodeToString(publicKey))
 			//decoder.wm.Log.Debugf("privateKey : %s", hex.EncodeToString(keyBytes))
 			//decoder.wm.Log.Debugf("signature: %s", hex.EncodeToString(sig))
@@ -423,7 +423,8 @@ func (decoder *TransactionDecoder) createRawTransaction(
 		return err
 	}
 
-	ttl, nonce, err := decoder.wm.Api.GetTTLNonce(addrBalance.Address, aeternity.Config.Client.TTL)
+	helpers := aeternity.Helpers{Node: decoder.wm.Api}
+	ttl, nonce, err := helpers.GetTTLNonce(addrBalance.Address, aeternity.Config.Client.TTL)
 	if err != nil {
 		return err
 	}
@@ -443,10 +444,11 @@ func (decoder *TransactionDecoder) createRawTransaction(
 	tx := aeternity.NewSpendTx(
 		addrBalance.Address,
 		destination,
-		utils.BigInt{amount},
-		utils.BigInt{feeInfo.Fee},
-		callData, ttl, nonce+pending)
-	txRaw, err := tx.RLP()
+		*amount,
+		*feeInfo.Fee,
+		[]byte(callData), ttl, nonce+pending)
+	txRaw, err := rlp.EncodeToBytes(tx)
+	//txRaw, err := tx.RLP()
 	if err != nil {
 		return err
 	}
