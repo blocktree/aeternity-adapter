@@ -39,12 +39,17 @@ func TestAEBlockScanner_GetBlockByHeight(t *testing.T) {
 
 func TestAEBlockScanner_GetTransactionsByMicroBlockHash(t *testing.T) {
 	wm := testNewWalletManager()
-	txs, err := wm.Blockscanner.GetTransactionsByMicroBlockHash("mh_o18KTf4s7nMpxDq8kKsD6H3KzQ8zzPJnsMdYtk6hKYtCquEbD")
+	txs, err := wm.Blockscanner.GetTransactionsByMicroBlockHash("mh_qyoAFCQwB2uRLz19VRTpeDnvTePojm6KmF8pcu24JcWtFYt1z")
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 		return
 	}
-	log.Infof("txs: %v", txs)
+	for _, tx := range txs {
+		log.Infof("txid: %s", *tx.Hash)
+		//log.Infof("signTx: %+v", tx)
+		//log.Infof("tx: %+v", tx.Tx())
+	}
+
 }
 
 func TestGetCurrentGeneration(t *testing.T) {

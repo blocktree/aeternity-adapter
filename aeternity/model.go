@@ -96,3 +96,5 @@ func NewUnscanRecord(height uint64, microBlockID, reason string) *UnscanRecord {
 	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, microBlockID))))
 	return &obj
 }
+
+

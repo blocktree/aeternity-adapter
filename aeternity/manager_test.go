@@ -39,7 +39,7 @@ func TestWalletManager_GetAccount(t *testing.T) {
 
 func TestWalletManager_GetAccountPendingTxCount(t *testing.T) {
 	wm := testNewWalletManager()
-	r, err := wm.GetAccountPendingTxCount("ak_rozWtRmHh91aEu1Qo46wGSHtJfaGtbgRgPEezZvTmHtRu1fqe")
+	r, err := wm.GetAccountPendingTxCount("ak_qcqXt6ySgRPvBkNwEpNMvaKWzrhPZsoBHLvgg68qg9vRht62y")
 	if err != nil {
 		log.Errorf("unexpected error: %v", err)
 		return

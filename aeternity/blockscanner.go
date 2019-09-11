@@ -226,13 +226,49 @@ func (bs *AEBlockScanner) GetGlobalMaxBlockHeight() uint64 {
 }
 
 //GetTransactionsByMicroBlockHash
-func (bs *AEBlockScanner) GetTransactionsByMicroBlockHash(hash string) ([]*models.GenericSignedTx, error) {
+func (bs *AEBlockScanner) GetTransactionsByMicroBlockHash2(hash string) ([]*models.GenericSignedTx, error) {
 	txs, err := bs.wm.Api.GetMicroBlockTransactionsByHash(hash)
 	if err != nil {
 		return nil, err
 	}
 	return txs.Transactions, nil
 }
+
+//GetTransactionsByMicroBlockHash
+func (bs *AEBlockScanner) GetTransactionsByMicroBlockHash(hash string) ([]*models.GenericSignedTx, error) {
+
+	if bs.wm.client == nil {
+		return nil, fmt.Errorf("aeternity API is not inited")
+	}
+
+	path := fmt.Sprintf("/micro-blocks/hash/%s/transactions", hash)
+	result, err := bs.wm.client.Call(path, "GET", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	txs := result.Get("transactions")
+	if !txs.IsArray() {
+		return nil, nil
+	}
+
+	gtxArray := make([]*models.GenericSignedTx, 0)
+
+	for _, tx := range txs.Array() {
+		if tx.Get("tx.type").String() == "SpendTx" {
+			gtx := &models.GenericSignedTx{}
+			err := gtx.UnmarshalJSON([]byte(tx.Raw))
+			if err != nil {
+				return nil, err
+			}
+			gtxArray = append(gtxArray, gtx)
+		}
+	}
+
+
+	return gtxArray, nil
+}
+
 
 //GetTransactionsByBlockHash
 func (bs *AEBlockScanner) GetTransactionsByBlock(block *Block) ([]*models.GenericSignedTx, error) {

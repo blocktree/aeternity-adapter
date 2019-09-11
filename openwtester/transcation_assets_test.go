@@ -118,44 +118,55 @@ func testSubmitTransactionStep(tm *openw.WalletManager, rawTx *openwallet.RawTra
 }
 
 func TestTransfer_AE(t *testing.T) {
+
+	addrs := []string {
+		"ak_PTXjp4HQJ6AHmWzXWQCfMbdQgix2cLguaYZkADA5WBD3XFgn2",
+		"ak_2DU8H6X8gotAKqwmhfCpXV64wokPNUfKeaUiZHBQZKW55RaNHD",
+		"ak_2MujCJSErs39kvPw46k8tBfa1tbkSbBKcSS5XguX42pxYRtqzZ",
+		"ak_2U3nehAKi2PZmHNrQSrc4LbETJBvJ6Lgw7EAvCmYyKa95YDsYy",
+		"ak_2VCLjW8qQocf4XXdxARQJn8oz5WU8gRzpuLY5PDXqiknqjdLhY",
+	}
+
 	tm := testInitWalletManager()
 	walletID := "WKnpZFZbcDtn6xM6FAh6aVSiU342H8Pbcp"
 	accountID := "3kjTyuy8dt2RUcokpbg27ioBHBehh8THKz9FxsrrDZS6"
-	to := "ak_qrKKpCkCYej3MakQqgxZZNCfEwV1T6vYvKuEUr9j3hDY3aXYK"
+	//to := "ak_mPXUBSsSCJgfu3yz2i2AiVTtLA2TzMyMJL5e6X7shM9Qa246t"
 
 	//accountID := "3biDqABdY66PtH5R8xk2upxz5xcLLpu7pDvpq3Bb9Yec"
 	//to := "ak_qcqXt6ySgRPvBkNwEpNMvaKWzrhPZsoBHLvgg68qg9vRht62y"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)
 
-	rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
-	if err != nil {
-		return
+	for _, to := range addrs {
+
+		rawTx, err := testCreateTransactionStep(tm, walletID, accountID, to, "0.01", "", nil)
+		if err != nil {
+			return
+		}
+
+		log.Std.Info("rawTx: %+v", rawTx)
+
+		_, err = testSignTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testVerifyTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
+
+		_, err = testSubmitTransactionStep(tm, rawTx)
+		if err != nil {
+			return
+		}
 	}
-
-	log.Std.Info("rawTx: %+v", rawTx)
-
-	_, err = testSignTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
-
-	_, err = testVerifyTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
-
-	_, err = testSubmitTransactionStep(tm, rawTx)
-	if err != nil {
-		return
-	}
-
 }
 
 func TestSummary_AE(t *testing.T) {
 	tm := testInitWalletManager()
 	walletID := "WKnpZFZbcDtn6xM6FAh6aVSiU342H8Pbcp"
-	accountID := "3kjTyuy8dt2RUcokpbg27ioBHBehh8THKz9FxsrrDZS6"
+	accountID := "3biDqABdY66PtH5R8xk2upxz5xcLLpu7pDvpq3Bb9Yec"
 	summaryAddress := "ak_qcqXt6ySgRPvBkNwEpNMvaKWzrhPZsoBHLvgg68qg9vRht62y"
 
 	testGetAssetsAccountBalance(tm, walletID, accountID)

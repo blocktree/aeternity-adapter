@@ -9,7 +9,6 @@ import (
 	"github.com/blocktree/openwallet/common"
 	"github.com/blocktree/openwallet/log"
 	"github.com/blocktree/openwallet/openwallet"
-	rlp "github.com/randomshinichi/rlpae"
 	"github.com/shopspring/decimal"
 	"math/big"
 	"sort"
@@ -423,8 +422,8 @@ func (decoder *TransactionDecoder) createRawTransaction(
 		return err
 	}
 
-	helpers := aeternity.Helpers{Node: decoder.wm.Api}
-	ttl, nonce, err := helpers.GetTTLNonce(addrBalance.Address, aeternity.Config.Client.TTL)
+	//helpers := aeternity.Helpers{Node: decoder.wm.Api}
+	ttl, nonce, err := aeternity.GetTTLNonce(decoder.wm.Api, addrBalance.Address, aeternity.Config.Client.TTL)
 	if err != nil {
 		return err
 	}
@@ -446,9 +445,9 @@ func (decoder *TransactionDecoder) createRawTransaction(
 		destination,
 		*amount,
 		*feeInfo.Fee,
-		[]byte(callData), ttl, nonce+pending)
-	txRaw, err := rlp.EncodeToBytes(tx)
-	//txRaw, err := tx.RLP()
+		callData, ttl, nonce+pending)
+	//txRaw, err := rlp.EncodeToBytes(tx)
+	txRaw, err := tx.RLP()
 	if err != nil {
 		return err
 	}
