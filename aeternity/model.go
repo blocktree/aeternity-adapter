@@ -1,10 +1,7 @@
 package aeternity
 
 import (
-	"fmt"
 	"github.com/aeternity/aepp-sdk-go/swagguard/node/models"
-	"github.com/blocktree/openwallet/common"
-	"github.com/blocktree/openwallet/crypto"
 	"github.com/blocktree/openwallet/openwallet"
 	"math/big"
 )
@@ -79,22 +76,4 @@ func NewMicroBlock(height uint64, hash string) *MicroBlock {
 	obj.Hash = hash
 	return obj
 }
-
-//UnscanRecords 扫描失败的区块及交易
-type UnscanRecord struct {
-	ID           string `storm:"id"` // primary key
-	BlockHeight  uint64
-	MicroBlockID string
-	Reason       string
-}
-
-func NewUnscanRecord(height uint64, microBlockID, reason string) *UnscanRecord {
-	obj := UnscanRecord{}
-	obj.BlockHeight = height
-	obj.MicroBlockID = microBlockID
-	obj.Reason = reason
-	obj.ID = common.Bytes2Hex(crypto.SHA256([]byte(fmt.Sprintf("%d_%s", height, microBlockID))))
-	return &obj
-}
-
 
